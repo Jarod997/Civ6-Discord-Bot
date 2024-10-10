@@ -4,8 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
+// Variable to disable certain items when frequent restarts are going to happen
+global.inDevelopment = true;
+
 // Create array for game & turn info
-const myGames = [];
+global.myGames = [];
 
 // class for game data
 class Games {
@@ -28,6 +31,48 @@ const client = new Client({
 
 // Create collections
 client.commands = new Collection(); // For storing commands we've defined for the bot
+
+// Dynamically retrieve all command files
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+	const commandsPath = path.join(foldersPath, folder);
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	for (const file of commandFiles) {
+		const filePath = path.join(commandsPath, file);
+		const command = require(filePath);
+		// Set a new item in the Collection with the key as the command name and the value as the exported module
+		if ('data' in command && 'execute' in command) {
+			client.commands.set(command.data.name, command);
+		} else {
+			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+		}
+	}
+}
+
+// Create listener for slash commands
+client.on(Events.InteractionCreate, async interaction => {
+	if (!interaction.isChatInputCommand()) return;
+
+	const command = interaction.client.commands.get(interaction.commandName);
+
+	if (!command) {
+		console.error(`No command matching ${interaction.commandName} was found.`);
+		return;
+	}
+
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+		} else {
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+		}
+	}
+});
 
 
 // Dynamically retrieve event files
@@ -53,11 +98,11 @@ const txtEndTurn = `\nGame:`;
 // Capture messageID of the previous summary post
 var botPostID = "";
 
+// Create listener for new messages
 client.on("messageCreate", message => {
-	//console.log(`Message as follows:`, message);
 
 	// Log the message ID of the last summary post, to delete it when we post the new message
-	if (message.author.bot && message.author.username === `Civ 6 Turn Compiler`) {
+	if (message.author.bot) {
 		if (message.content.includes(`PBC Game Summary`)) {
 			botPostID=message.id;
 		}
@@ -72,18 +117,13 @@ client.on("messageCreate", message => {
 
 			// Get the player ID, then convert to a text name -- DETECT NON LINK player names
 			thisGame.player = message.content.substring(0, message.content.indexOf(txtPlayer));
-			console.log(`Step 1: >${thisGame.player}<`);
-			console.log(`Step 1a: >${thisGame.player.substring(0, 2)}<`);
-			console.log(`Step 1b: >${thisGame.player.substring(0, 2) === '<@'}<`);
 			if (thisGame.player.substring(0, 2) === '<@') {
 				// Process a normal Discord link-type username - remove the leading `<@` and trailing `>`
 				thisGame.player=thisGame.player.substring(2, (thisGame.player.length - 1));
-				console.log(`Step 2: >${thisGame.player}<`);
 				// Use the ID (long number) to fetch...
 				const user = client.users.cache.find((user) => user.id === thisGame.player);
 				// ...and return a plain text username
 				thisGame.player = user.displayName;
-				console.log(`Step 3: >${thisGame.player}<`);
 			}
 			
 			// Get the game name and turn number
@@ -115,7 +155,6 @@ client.on("messageCreate", message => {
 
 			// Display the games summary
 			var updateMessage = "**PBC Game Summary**\n";
-			console.log(`Size: ${myGames.length}`);
 			for (let step = 0; step < myGames.length; step++) {
 				console.log(myGames[step]);
 				updateMessage += "*" + myGames[step].game + "*, Turn " + myGames[step].turn + " - " + myGames[step].player + "\n"
