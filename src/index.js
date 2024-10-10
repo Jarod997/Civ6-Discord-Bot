@@ -96,7 +96,7 @@ const txtTurn = `Turn: `;
 const txtEndTurn = `\nGame:`;
 
 // Capture messageID of the previous summary post
-var botPostID = "";
+global.botPostID = "";
 
 // Create listener for new messages
 client.on("messageCreate", message => {
