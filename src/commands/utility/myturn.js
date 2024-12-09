@@ -19,9 +19,6 @@ module.exports = {
 		var noGame=true;
 
 		for (let step = 0; step < myGames.length; step++) {
-			// Debugging lines
-			console.log('myGames[step].player:', myGames[step].player);
-			console.log('target:', target.globalName);
 			if (myGames[step].player == target.globalName) {
 				// Found a game where it's the users turn
 				updateMessage+=`- ` + myGames[step].game + `\n`;

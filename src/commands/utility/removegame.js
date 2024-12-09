@@ -16,30 +16,42 @@ module.exports = {
 	async execute(interaction) {
 
 		const removeGame = interaction.options.getString('gamename');
+		console.log('removeGame:', removeGame);
 
 		// Set a found flag
 		var gameFound = false;
 		// Check the list for the game
 		for (let step = 0; step < myGames.length; step++) {
+			console.log('Step ', step, 'myGames[step]:', myGames[step].game);
 			if (myGames[step].game==removeGame) {
 				// Found it
 				gameFound=true;
+				console.log('Found it!');
 				// Remove game from list
 				myGames.splice(step, 1);
+				console.log('Spliced!');
 				// Don't parse the rest of the list
-				return;
+				break;
 			}
 		}
 
 		// Set the reply message, if found or not
-		if (gameFound) { replyMsg=removeGame & ` removed.`;	}
+		if (gameFound) { replyMsg=removeGame + ` removed.`;	}
 		else { replyMsg=`Game not found.`};
+
+		if (inDevelopment) {
+			console.log(`* New myGames:`);
+			for (let temp=0; temp<=(myGames.length-1); temp++) {
+				console.log(`**`, myGames[temp].game);
+			}
+		}
 
 		// Post the reply
 		await interaction.reply({
 			content: replyMsg,
 			ephemeral: true
 		});
+
 
 	},
 }
