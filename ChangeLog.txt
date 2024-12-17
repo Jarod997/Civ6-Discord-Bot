@@ -1,0 +1,11 @@
+09-DEC-2024
+- Created a new Startup routine
+-- Polls the lst summary message, and the last 100 update posts and rebuilds the summary
+- Rebuilt the message fetching routine to handle "things" better
+- Standardized the console messages to better show program flow
+- Added a "*" indicator in the summary to show the last game to be updated
+-- Also shows "Server Rebooted" if the summary post is new because the server restarted
+
+17-DEC-2024
+- Created ChangeLog.txt
+- Created Current Known Issues.txt
