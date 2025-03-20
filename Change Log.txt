@@ -1,3 +1,6 @@
+20-Mar-2025
+- /scoreboard command re-added
+
 20-MAR-2025
 - Accidentally deleted a bunch of commits, lost a lot of code
 - Retrieved most from a backup
