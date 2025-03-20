@@ -13,9 +13,11 @@ const txtEndTurn = `\nGame:`;
 
 // *** Globals ***
 // Variable to disable certain items when frequent restarts are going to happen
-global.inDevelopment = true;
+global.inDevelopment = false;
 // Create array for game & turn info
 global.myGames = [];
+// Create array to hold a jobs list - used to prevent crashes from (near) concurrent update posts
+global.jobQueue = [];
 
 // class for game data
 class Games {
@@ -141,6 +143,9 @@ client.on("messageCreate", message => {
 				}
 			}
 
+			// Add a job to the work queue
+			jobQueue.push(thisGame);
+
 			// If the game exists, update it - otherwise add it to the set
 			if (myGames.length==0) {
 				// Add the first array item if it's empty
@@ -180,7 +185,13 @@ client.on("messageCreate", message => {
 				}
 			}
 
-			postSummary(thisGame.game);
+			// If at this point there's more than one job in the work queue, delete one job and just skip posting the update, we'll catch it on the next round.
+			if (jobQueue.length >= 2) {
+				console.log(`** Work queue backed up, skipping post:`, jobQueue.length);
+				jobQueue.shift();
+			} else {
+				postSummary(thisGame.game);
+			}
 		}
 	}
 })
@@ -279,6 +290,18 @@ async function runBotStartup() {
 		}
 	});
 
+	if (jobQueue.length != 0) {
+		console.log(`- Job Queue not empty, clearing.`);
+		if (inDevelopment) {console.log(`>>>> Pre-clear jobQueue length: `, jobQueue.length);}
+		for (a=0; a<=jobQueue.length-1; a++) {
+			if (inDevelopment) {console.log(`>>>>> Pop count`, a);}
+			jobQueue.pop();
+		}
+	} else {
+		console.log(`- Job Queue empty.`);
+		if (inDevelopment) {console.log(`>>>> Job Queue length:`, jobQueue.length);}
+	}
+
 	sortGames();
 
 	console.log('- Current data:');
@@ -308,6 +331,7 @@ function sortGames() {
 async function postSummary(lastUpdatedGame) {
 
 	console.log(`>>> Post Summary start:`);
+	jobQueue.shift(); // Remove the current job in the list.
 
 	const OutputChannel = client.channels.cache.get(process.env.SummaryChannelID);
 	console.log(`- Fetch summary bot messages.`);

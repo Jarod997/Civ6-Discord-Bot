@@ -11,7 +11,7 @@ module.exports = {
 		// Post to the channel when the bot (last) started
 		if (!inDevelopment) {
 			const startupMessage = `✅ ${client.user.username} is online.`;
-			client.channels.cache.get(process.env.CHANNELID).send(startupMessage);
+			client.channels.cache.get(process.env.SummaryChannelID).send(startupMessage);
 		}
 	},
 };
