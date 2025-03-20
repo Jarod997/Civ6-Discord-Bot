@@ -1,3 +1,13 @@
+20-MAR-2025
+- Accidentally deleted a bunch of commits, lost a lot of code
+- Retrieved most from a backup
+-- Added a Job Queue to deal with multiple single posts, and simultaneous different posts
+- Need to re-add:
+-- Change summary formatting:
+--- Group and sort by player name, then game name
+-- Add /scoreboard command
+--- Displays everything in monospace `text` and shows game, player, turn, timestamp; sorted by game
+
 09-DEC-2024
 - Created a new Startup routine
 -- Polls the lst summary message, and the last 100 update posts and rebuilds the summary
