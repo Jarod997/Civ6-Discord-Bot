@@ -133,6 +133,9 @@ client.on("messageCreate", message => {
 			thisGame.turn = message.content.substring(message.content.indexOf(txtTurn)+txtTurn.length, message.content.indexOf(txtEndTurn));
 			thisGame.timestamp = message.createdTimestamp;
 
+			// Add a job to the work queue
+			jobQueue.push(thisGame);
+
 			console.log(`>>> Bot text found:`, thisGame);
 			if (inDevelopment) {
 				console.log(`* Pre-process:`);
@@ -142,9 +145,6 @@ client.on("messageCreate", message => {
 					console.log(myGames[step]);
 				}
 			}
-
-			// Add a job to the work queue
-			jobQueue.push(thisGame);
 
 			// If the game exists, update it - otherwise add it to the set
 			if (myGames.length==0) {
@@ -186,12 +186,15 @@ client.on("messageCreate", message => {
 			}
 
 			// If at this point there's more than one job in the work queue, delete one job and just skip posting the update, we'll catch it on the next round.
+			if (inDevelopment) {console.log(`Job Queue, prior to calling postSummary: `, jobQueue.length);}
 			if (jobQueue.length >= 2) {
 				console.log(`** Work queue backed up, skipping post:`, jobQueue.length);
 				jobQueue.shift();
 			} else {
 				postSummary(thisGame.game);
+				console.log(`Updated at: `, getTime(thisGame.timestamp));
 			}
+			if (inDevelopment) {console.log(`Job Queue, after postSummary: `, jobQueue.length);}
 		}
 	}
 })
@@ -331,8 +334,7 @@ function sortGames() {
 async function postSummary(lastUpdatedGame) {
 
 	console.log(`>>> Post Summary start:`);
-	jobQueue.shift(); // Remove the current job in the list.
-
+	
 	const OutputChannel = client.channels.cache.get(process.env.SummaryChannelID);
 	console.log(`- Fetch summary bot messages.`);
 	const summaryMessages = await OutputChannel.messages.fetch({ limit: 10});
@@ -377,5 +379,42 @@ async function postSummary(lastUpdatedGame) {
 	// Post the update.
 	client.channels.cache.get(process.env.SummaryChannelID).send(updateMessage);
 
-	console.log(`- Update posted.`);
+	// Remove the current job in the list.
+	jobQueue.shift();
+	console.log(`- Update posted, Job Queue: `, jobQueue.length, `\n`);
+}
+
+function getTime(timestamp) {
+// Takes a Discord timecode and returns a formatted date/time string
+
+	// Define month words
+	var months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+	// Not currently used, but here just in case.
+	var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+	var dateString; // The return value
+	// Grab the time code, turn it into a date
+	var date = new Date(timestamp);
+
+	// Break it into components
+	const d = {
+		year: date.getFullYear(),
+		month: months[date.getMonth()],
+		day: date.getDate(),
+		hours: date.getHours(),
+		minutes: date.getMinutes(),
+		seconds: date.getSeconds()
+	};
+
+	// Build the date string
+	dateString=``;
+	if (d.day<10) {dateString=`0`;}
+	dateString+=d.day + `-` + d.month + `-` + d.year + `, `;
+	dateString+=d.hours + `:`;
+	if (d.minutes<10) {dateString+=`0`;}
+	dateString+=d.minutes + `:`;
+	if (d.seconds<10) {dateString+=`0`;}
+	dateString+=d.seconds;
+
+	return dateString;
 }

@@ -46,6 +46,8 @@ module.exports = {
 			}
 		}
 
+		console.log(`\n`);
+
 		// Post the reply
 		await interaction.reply({
 			content: replyMsg,
