@@ -188,13 +188,13 @@ client.on("messageCreate", message => {
 			// If at this point there's more than one job in the work queue, delete one job and just skip posting the update, we'll catch it on the next round.
 			if (inDevelopment) {console.log(`Job Queue, prior to calling postSummary: `, jobQueue.length);}
 			if (jobQueue.length >= 2) {
-				console.log(`** Work queue backed up, skipping post:`, jobQueue.length);
+				console.log(`** Work queue backed up, skipping post:`, jobQueue.length, `\n`);
 				jobQueue.shift();
 			} else {
 				postSummary(thisGame.game);
-				console.log(`Updated at: `, getTime(thisGame.timestamp));
+				console.log(`Updated at:`, getTime(thisGame.timestamp));
 			}
-			if (inDevelopment) {console.log(`Job Queue, after postSummary: `, jobQueue.length);}
+			if (inDevelopment) {console.log(`Job Queue, after postSummary:`, jobQueue.length);}
 		}
 	}
 })
@@ -381,7 +381,7 @@ async function postSummary(lastUpdatedGame) {
 
 	// Remove the current job in the list.
 	jobQueue.shift();
-	console.log(`- Update posted, Job Queue: `, jobQueue.length, `\n`);
+	console.log(`- Update posted, Job Queue:`, jobQueue.length, `\n`);
 }
 
 function getTime(timestamp) {

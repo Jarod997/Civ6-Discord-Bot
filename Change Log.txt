@@ -1,3 +1,9 @@
+08-APR-2025
+- /removegame is now case insensitive
+
+04-APR-2025
+- JobQueue fixed
+
 20-Mar-2025
 - /scoreboard command re-added
 

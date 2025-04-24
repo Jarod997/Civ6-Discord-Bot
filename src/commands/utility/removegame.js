@@ -23,7 +23,8 @@ module.exports = {
 		// Check the list for the game
 		for (let step = 0; step < myGames.length; step++) {
 			console.log('Step ', step, 'myGames[step]:', myGames[step].game);
-			if (myGames[step].game==removeGame) {
+			// Added .toUpperCase() to remove case sensitivity
+			if (myGames[step].game.toUpperCase()==removeGame.toUpperCase()) {
 				// Found it
 				gameFound=true;
 				console.log('Found it!');
