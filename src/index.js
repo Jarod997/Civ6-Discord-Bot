@@ -11,6 +11,13 @@ const txtGame = `Game: `;
 const txtTurn = `Turn: `;
 const txtEndTurn = `\nGame:`;
 
+// Define padding constants for summary posts
+const playerSpace = 17; // Padding after the player name
+const gameSpace = 25;   // Padding after the game name
+const turnSpace = 5;    // Padding after the turn number
+const timeSpace = 21;   // Padding after TURN SINCE title for timestamp
+
+
 // *** Globals ***
 // Variable to disable certain items when frequent restarts are going to happen
 global.inDevelopment = false;
@@ -233,17 +240,29 @@ async function runBotStartup() {
 	if (botPostID=="") { console.log(`-- No previous post found!`); }
 
 	// If a previous post exists, read it into memory
+
+	var tempPlayer="";
 	if (botPostID!="") {
 		console.log(`- Loading previous post.`);
 		const postArr = lastPost.split("\n");
 		let thisGame=new Games;
 		for (let loopVar=0; loopVar<postArr.length; loopVar++) {
-			if (postArr[loopVar].includes(`, Turn `)) {
-				thisGame.game=postArr[loopVar].substring(0,postArr[loopVar].indexOf(`,`));
-				thisGame.turn=postArr[loopVar].substring(postArr[loopVar].indexOf(`,`)+7, postArr[loopVar].indexOf(`- `)-1);
-				thisGame.player=postArr[loopVar].substring(postArr[loopVar].indexOf(`- `)+2,);
+			if (postArr[loopVar].includes("`")) {
+				thisGame.player=postArr[loopVar].substring(1,playerSpace).trim();
+				thisGame.player.trim;
+				// "assign" the player name if it's blank from the summary
+				if (thisGame.player.length==0) {
+					thisGame.player=tempPlayer;
+				}
+				thisGame.game=postArr[loopVar].substring(playerSpace+1, playerSpace+gameSpace).trim();
+				thisGame.game.trim;
+				thisGame.turn=postArr[loopVar].substring(playerSpace+gameSpace+1,playerSpace+gameSpace+turnSpace).trim();
+				thisGame.turn.trim;
 				thisGame.timestamp=1;
 				myGames.push(thisGame);
+				if (thisGame.player.length>0) {
+					tempPlayer=thisGame.player;
+				}
 				thisGame=new Games;
 			}
 		}
@@ -333,6 +352,9 @@ function sortGames() {
 
 async function postSummary(lastUpdatedGame) {
 
+	postArr = [];
+	postArr = myGames; // Copy the current dataset to an independent array for sorting - this way we don't have to re-sort the main array
+
 	console.log(`>>> Post Summary start:`);
 	
 	const OutputChannel = client.channels.cache.get(process.env.SummaryChannelID);
@@ -355,21 +377,59 @@ async function postSummary(lastUpdatedGame) {
 
 	// Display the games summary
 	console.log(`- Building summary post...`);
-	var updateMessage = "**PBC Game Summary**\n";
+	var updateMessage="**PBC Game Summary**\n";
 	if (inDevelopment) { console.log(`** luG:`, lastUpdatedGame); }
 	if (lastUpdatedGame=="Server Rebooted") {
 		updateMessage="*Server Rebooted*\n**PBC Game Summary**\n";
 	}
-	for (let step = 0; step < myGames.length; step++) {
-		updateMessage += "*" + myGames[step].game + "*, Turn " + myGames[step].turn + " - " + myGames[step].player
-		// Add a marker to show which game was last updated
-		if (lastUpdatedGame==myGames[step].game) {
-			updateMessage += " *\n";
-		}
-		else {
-			updateMessage += "\n";
+
+	// The main list is already sorted by Game, if we sort by Player the list should be sorted by Player, then Game.
+	// Bubble sort on player name - small list
+	for (let a=0; a<postArr.length-1; a++) {
+		for (let b=a+1; b<=postArr.length-1; b++) {
+			let c=new Games;
+			if (postArr[b].player<postArr[a].player) {
+				c=postArr[b];
+				postArr[b]=postArr[a];
+				postArr[a]=c;
+			}
 		}
 	}
+
+	// Print the Title, include adjustments from normal to monospace font, and add backtick to start monospace font
+	updateMessage+=`__*Player*__` + ` `.repeat(playerSpace+11) + `__*Game*__` + ` `.repeat(gameSpace+21) + "__*Turn*__\n";
+
+	for (let step = 0; step < postArr.length; step++) {
+		
+		if (step>0 && postArr[step].player==postArr[step-1].player) {
+			// If this game is "in the same player", don't add the player name
+			updateMessage += "`" + ` `.repeat(playerSpace);
+			updateMessage += postArr[step].game + ` `.repeat(gameSpace-postArr[step].game.length);
+			updateMessage += postArr[step].turn + ` `.repeat(turnSpace-postArr[step].turn.length);
+			//let tempTime = getTime(postArr[step].time);
+			//updateMessage += `>` + tempTime + `<`; // ` `.repeat(timeSpace-tempTime.length);	
+		}
+		else {
+			// Otherwise, create a full new line
+			updateMessage += "`" + postArr[step].player + ` `.repeat(playerSpace-postArr[step].player.length);
+			updateMessage += postArr[step].game + ` `.repeat(gameSpace-postArr[step].game.length);
+			updateMessage += postArr[step].turn + ` `.repeat(turnSpace-postArr[step].turn.length);
+			/* let tempTime = getTime(postArr[step].time);
+			console.log(`Post time:`, postArr[step].time);
+			console.log(`Converted time:`, tempTime);
+			console.log(`Fresh time:`, getTime(postArr[step].time));
+			updateMessage += `>` + tempTime + `<`; // ` `.repeat(timeSpace-tempTime.length);	*/
+		}
+
+		// Add a marker to show which game was last updated
+		if (lastUpdatedGame==postArr[step].game) {
+			updateMessage += " *`\n";
+		}
+		else {
+			updateMessage += "`\n";
+		}
+	}
+
 
 	// If the bot HAS posted, then delete the previous post.
 	if (botPostID!="") { 
@@ -378,6 +438,7 @@ async function postSummary(lastUpdatedGame) {
 	}
 	// Post the update.
 	client.channels.cache.get(process.env.SummaryChannelID).send(updateMessage);
+
 
 	// Remove the current job in the list.
 	jobQueue.shift();
