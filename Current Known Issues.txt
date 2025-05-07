@@ -1,1 +1,1 @@
-07-APR-2025 No known issues.
+06-May-2025 - The timestamp is not being included in the summary - something is fishy with the time function.

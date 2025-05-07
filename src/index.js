@@ -175,11 +175,6 @@ client.on("messageCreate", message => {
 				if (newGame) {
 					console.log(`- Game not found, adding to list.`);
 					myGames.push(thisGame);
-					// ... and Sort by game -- bubble sort, small list
-					if (myGames.length>1) {
-						sortGames();
-						console.log(`-- List sorted.`);
-					}
 				}
 			}
 			
@@ -198,6 +193,8 @@ client.on("messageCreate", message => {
 				console.log(`** Work queue backed up, skipping post:`, jobQueue.length, `\n`);
 				jobQueue.shift();
 			} else {
+				// Sort immediately before posting to reduce possibility of wonkiness.
+				sortGames();
 				postSummary(thisGame.game);
 				console.log(`Updated at:`, getTime(thisGame.timestamp));
 			}
@@ -339,7 +336,7 @@ async function runBotStartup() {
 function sortGames() {
 	if (inDevelopment) {console.log(`>>> Sort games start.`);}
 	let tempGame =  new Games;
-	for (let numA=0; numA < (myGames.length-1); numA++) {
+	for (let numA=0; numA < (myGames.length-2); numA++) {
 		for (let numB=(numA+1); numB <= (myGames.length-1); numB++) {
 			if (myGames[numA].game > myGames[numB].game) {
 				tempGame=myGames[numB];
@@ -383,9 +380,8 @@ async function postSummary(lastUpdatedGame) {
 		updateMessage="*Server Rebooted*\n**PBC Game Summary**\n";
 	}
 
-	// The main list is already sorted by Game, if we sort by Player the list should be sorted by Player, then Game.
 	// Bubble sort on player name - small list
-	for (let a=0; a<postArr.length-1; a++) {
+	for (let a=0; a<postArr.length-2; a++) {
 		for (let b=a+1; b<=postArr.length-1; b++) {
 			let c=new Games;
 			if (postArr[b].player<postArr[a].player) {
@@ -430,19 +426,24 @@ async function postSummary(lastUpdatedGame) {
 		}
 	}
 
+	// Because the postSummary checks the channel for summary posts, we have to check again just in case THIS procedure was interrupted
+	if (jobQueue.length<=1) {
+		// If the bot HAS posted, then delete the previous post.
+		if (botPostID!="") { 
+			console.log(`- Deleting previous post.`);
+			client.channels.cache.get(process.env.SummaryChannelID).messages.fetch(botPostID).then(message => message.delete());
+		}
+		// Post the update.
+		client.channels.cache.get(process.env.SummaryChannelID).send(updateMessage);
 
-	// If the bot HAS posted, then delete the previous post.
-	if (botPostID!="") { 
-		console.log(`- Deleting previous post.`);
-		client.channels.cache.get(process.env.SummaryChannelID).messages.fetch(botPostID).then(message => message.delete());
+		// Remove the current job in the list.
+		jobQueue.pop();
+		console.log(`- Update posted, Job Queue:`, jobQueue.length, `\n`);
 	}
-	// Post the update.
-	client.channels.cache.get(process.env.SummaryChannelID).send(updateMessage);
-
-
-	// Remove the current job in the list.
-	jobQueue.shift();
-	console.log(`- Update posted, Job Queue:`, jobQueue.length, `\n`);
+	else {
+		jobQueue.pop();
+		console.log(`- Delete & post interrupted, skipping delete & post. \n`);
+	}
 }
 
 function getTime(timestamp) {
