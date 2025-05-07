@@ -336,9 +336,9 @@ async function runBotStartup() {
 function sortGames() {
 	if (inDevelopment) {console.log(`>>> Sort games start.`);}
 	let tempGame =  new Games;
-	for (let numA=0; numA < (myGames.length-2); numA++) {
+	for (let numA=0; numA <= (myGames.length-2); numA++) {
 		for (let numB=(numA+1); numB <= (myGames.length-1); numB++) {
-			if (myGames[numA].game > myGames[numB].game) {
+			if (myGames[numA].game.toUpperCase() > myGames[numB].game.toUpperCase()) {
 				tempGame=myGames[numB];
 				myGames[numB]=myGames[numA];
 				myGames[numA]=tempGame;
@@ -381,10 +381,10 @@ async function postSummary(lastUpdatedGame) {
 	}
 
 	// Bubble sort on player name - small list
-	for (let a=0; a<postArr.length-2; a++) {
+	for (let a=0; a<=postArr.length-2; a++) {
 		for (let b=a+1; b<=postArr.length-1; b++) {
 			let c=new Games;
-			if (postArr[b].player<postArr[a].player) {
+			if (postArr[b].player.toUpperCase()<postArr[a].player.toUpperCase()) {
 				c=postArr[b];
 				postArr[b]=postArr[a];
 				postArr[a]=c;
