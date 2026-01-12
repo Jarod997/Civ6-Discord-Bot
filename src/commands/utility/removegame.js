@@ -40,7 +40,7 @@ module.exports = {
 		if (gameFound) { replyMsg=removeGame + ` removed.`;	}
 		else { replyMsg=`Game not found.`};
 
-		if (inDevelopment) {
+		if (inDevelopment >= 1) {
 			console.log(`* New myGames:`);
 			for (let temp=0; temp<=(myGames.length-1); temp++) {
 				console.log(`**`, myGames[temp].game);

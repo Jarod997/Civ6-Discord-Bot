@@ -1,1 +1,3 @@
 06-May-2025 - The timestamp is not being included in the summary - something is fishy with the time function.
+20-May-2025 - Sometimes the bot misses deleting a summary post and posts a new summary anyway
+- if one of the summaries is manually deleted the bot will eventually crash

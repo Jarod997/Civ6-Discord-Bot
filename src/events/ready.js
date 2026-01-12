@@ -9,7 +9,7 @@ module.exports = {
 		console.log(`Ready! Logged in as ${client.user.tag} at ${Date().toString()}`);
         console.log(`✅ ${client.user.tag} - ${client.user.username} is online.`);
 		// Post to the channel when the bot (last) started
-		if (!inDevelopment) {
+		if (inDevelopment == 0) {
 			const startupMessage = `✅ ${client.user.username} is online.`;
 			client.channels.cache.get(process.env.SummaryChannelID).send(startupMessage);
 		}

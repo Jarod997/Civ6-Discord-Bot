@@ -20,7 +20,7 @@ const timeSpace = 21;   // Padding after TURN SINCE title for timestamp
 
 // *** Globals ***
 // Variable to disable certain items when frequent restarts are going to happen
-global.inDevelopment = false;
+global.inDevelopment = 1; // 0: off, 1: add debugging lines, 2: add data dumps
 // Create array for game & turn info
 global.myGames = [];
 // Create array to hold a jobs list - used to prevent crashes from (near) concurrent update posts
@@ -144,17 +144,19 @@ client.on("messageCreate", message => {
 			jobQueue.push(thisGame);
 
 			console.log(`>>> Bot text found:`, thisGame);
-			if (inDevelopment) {
+			if (inDevelopment >= 1) {
 				console.log(`* Pre-process:`);
 				console.log(`** thisGame:`, thisGame);
 				console.log(`** myGames:`);
+			}
+			if (inDevelopment >= 2) {
 				for (let step=0; step<myGames.length; step++) {
 					console.log(myGames[step]);
 				}
 			}
 
 			// If the game exists, update it - otherwise add it to the set
-			if (myGames.length==0) {
+			if (myGames.length == 0) {
 				// Add the first array item if it's empty
 				console.log(`- Adding first game to list.`);
 				myGames.push(thisGame);
@@ -178,17 +180,19 @@ client.on("messageCreate", message => {
 				}
 			}
 			
-			if (inDevelopment) {
+			if (inDevelopment >= 1) {
 				console.log(`* Post-process:`);
 				console.log(`** thisGame:`, thisGame);
 				console.log(`** myGames:`);
+			}
+			if (inDevelopment >= 2) {
 				for (let step=0; step<myGames.length; step++) {
 					console.log(myGames[step]);
 				}
 			}
 
 			// If at this point there's more than one job in the work queue, delete one job and just skip posting the update, we'll catch it on the next round.
-			if (inDevelopment) {console.log(`Job Queue, prior to calling postSummary: `, jobQueue.length);}
+			if (inDevelopment >= 1) {console.log(`Job Queue, prior to calling postSummary: `, jobQueue.length);}
 			if (jobQueue.length >= 2) {
 				console.log(`** Work queue backed up, skipping post:`, jobQueue.length, `\n`);
 				jobQueue.shift();
@@ -198,7 +202,8 @@ client.on("messageCreate", message => {
 				postSummary(thisGame.game);
 				console.log(`Updated at:`, getTime(thisGame.timestamp));
 			}
-			if (inDevelopment) {console.log(`Job Queue, after postSummary:`, jobQueue.length);}
+			if (inDevelopment >= 1) {console.log(`Job Queue, after postSummary:`, jobQueue.length);}
+			console.log(`>< >< Update process complete, waiting for more updates. >< ><`); // Visual separation in the logs between runs
 		}
 	}
 })
@@ -227,7 +232,7 @@ async function runBotStartup() {
 	// Read the Summary channel for any previous posts
 	console.log(`- Reading summary messages...`);
 	summaryMessages.forEach(message => {
-		if (inDevelopment) { console.log(`** Post:`, message.content); }
+		if (inDevelopment >= 1) { console.log(`** Post:`, message.content); }
 		if (message.content.includes(`PBC Game Summary`)) {
 			lastPost=message.content.trim().replaceAll("*", "");
 			botPostID=message.id;
@@ -264,8 +269,10 @@ async function runBotStartup() {
 			}
 		}
 
-		if (inDevelopment) {
+		if (inDevelopment >= 1) {
 			console.log('* Post-load post:');
+		}
+		if (inDevelopment >= 2) {
 			for (let step = 0; step < myGames.length; step++) {
 				console.log(myGames[step]);
 			}
@@ -311,30 +318,30 @@ async function runBotStartup() {
 
 	if (jobQueue.length != 0) {
 		console.log(`- Job Queue not empty, clearing.`);
-		if (inDevelopment) {console.log(`>>>> Pre-clear jobQueue length: `, jobQueue.length);}
+		if (inDevelopment >= 1) {console.log(`>>>> Pre-clear jobQueue length: `, jobQueue.length);}
 		for (a=0; a<=jobQueue.length-1; a++) {
-			if (inDevelopment) {console.log(`>>>>> Pop count`, a);}
+			if (inDevelopment >= 1) {console.log(`>>>>> Pop count`, a);}
 			jobQueue.pop();
 		}
 	} else {
 		console.log(`- Job Queue empty.`);
-		if (inDevelopment) {console.log(`>>>> Job Queue length:`, jobQueue.length);}
+		if (inDevelopment >= 1) {console.log(`>>>> Job Queue length:`, jobQueue.length);}
 	}
 
 	sortGames();
 
 	console.log('- Current data:');
-	if (inDevelopment) {console.log(`myGames.length:`, myGames.length);}
+	if (inDevelopment >= 1) {console.log(`myGames.length:`, myGames.length);}
 	for (let step = 0; step < myGames.length; step++) {
 		console.log(myGames[step]);
 	}
 
 	postSummary("Server Rebooted");
-	console.log(`Starup complete, waiting for updates.`);
+	console.log(`>< >< Starup complete, waiting for updates. >< ><`);
 }
 
 function sortGames() {
-	if (inDevelopment) {console.log(`>>> Sort games start.`);}
+	if (inDevelopment >= 1) {console.log(`>>> Sort games start.`);}
 	let tempGame =  new Games;
 	for (let numA=0; numA <= (myGames.length-2); numA++) {
 		for (let numB=(numA+1); numB <= (myGames.length-1); numB++) {
@@ -375,7 +382,7 @@ async function postSummary(lastUpdatedGame) {
 	// Display the games summary
 	console.log(`- Building summary post...`);
 	var updateMessage="**PBC Game Summary**\n";
-	if (inDevelopment) { console.log(`** luG:`, lastUpdatedGame); }
+	if (inDevelopment >= 1) { console.log(`** luG:`, lastUpdatedGame); }
 	if (lastUpdatedGame=="Server Rebooted") {
 		updateMessage="*Server Rebooted*\n**PBC Game Summary**\n";
 	}
@@ -427,9 +434,9 @@ async function postSummary(lastUpdatedGame) {
 	}
 
 	// Because the postSummary checks the channel for summary posts, we have to check again just in case THIS procedure was interrupted
-	if (jobQueue.length<=1) {
+	if (jobQueue.length <= 1) {
 		// If the bot HAS posted, then delete the previous post.
-		if (botPostID!="") { 
+		if (botPostID != "") { 
 			console.log(`- Deleting previous post.`);
 			client.channels.cache.get(process.env.SummaryChannelID).messages.fetch(botPostID).then(message => message.delete());
 		}
