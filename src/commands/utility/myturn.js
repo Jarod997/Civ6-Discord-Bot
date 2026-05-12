@@ -1,6 +1,7 @@
 // This command will show all games for which it is the users turn
 
 const { SlashCommandBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 require('dotenv').config();
 
 module.exports = {
@@ -34,7 +35,7 @@ module.exports = {
 
 		await interaction.reply({
 			content: updateMessage,
-			ephemeral: true
+			flags: MessageFlags.Ephemeral
 		});
 	},
 }

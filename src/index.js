@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 
 // *** Constants ***
 // Define text constants for lookups
@@ -14,7 +15,7 @@ const txtEndTurn = `\nGame:`;
 // Define padding constants for summary posts
 const playerSpace = 17; // Padding after the player name
 const gameSpace = 25;   // Padding after the game name
-const turnSpace = 5;    // Padding after the turn number
+const turnSpace = 6;    // Padding after the turn number
 const timeSpace = 21;   // Padding after TURN SINCE title for timestamp
 
 
@@ -93,9 +94,9 @@ client.on(Events.InteractionCreate, async interaction => {
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
 		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
 		}
 	}
 });
@@ -170,6 +171,7 @@ client.on("messageCreate", message => {
 						myGames[step].player = thisGame.player;
 						myGames[step].turn = thisGame.turn;
 						myGames[step].timestamp = thisGame.timestamp;
+						// myGames[step].timestamp = getTime(thisGame.timestamp);
 						newGame = false;
 					}
 				}
@@ -200,7 +202,6 @@ client.on("messageCreate", message => {
 				// Sort immediately before posting to reduce possibility of wonkiness.
 				sortGames();
 				postSummary(thisGame.game);
-				console.log(`Updated at:`, getTime(thisGame.timestamp));
 			}
 			if (inDevelopment >= 1) {console.log(`Job Queue, after postSummary:`, jobQueue.length);}
 			console.log(`>< >< Update process complete, waiting for more updates. >< ><`); // Visual separation in the logs between runs
@@ -338,6 +339,7 @@ async function runBotStartup() {
 
 	postSummary("Server Rebooted");
 	console.log(`>< >< Starup complete, waiting for updates. >< ><`);
+
 }
 
 function sortGames() {
@@ -400,7 +402,7 @@ async function postSummary(lastUpdatedGame) {
 	}
 
 	// Print the Title, include adjustments from normal to monospace font, and add backtick to start monospace font
-	updateMessage+=`__*Player*__` + ` `.repeat(playerSpace+11) + `__*Game*__` + ` `.repeat(gameSpace+21) + "__*Turn*__\n";
+	updateMessage+=`__*Player*__` + ` `.repeat(playerSpace+11) + `__*Game*__` + ` `.repeat(gameSpace+21) + `__*Turn*__` + ` `.repeat(timeSpace-14) + "__*Last Played*__\n";
 
 	for (let step = 0; step < postArr.length; step++) {
 		
@@ -409,19 +411,16 @@ async function postSummary(lastUpdatedGame) {
 			updateMessage += "`" + ` `.repeat(playerSpace);
 			updateMessage += postArr[step].game + ` `.repeat(gameSpace-postArr[step].game.length);
 			updateMessage += postArr[step].turn + ` `.repeat(turnSpace-postArr[step].turn.length);
-			//let tempTime = getTime(postArr[step].time);
-			//updateMessage += `>` + tempTime + `<`; // ` `.repeat(timeSpace-tempTime.length);	
+			let tempTime = getTime(postArr[step].timestamp);
+			updateMessage += tempTime + ` `.repeat(timeSpace-tempTime.length);	
 		}
 		else {
 			// Otherwise, create a full new line
 			updateMessage += "`" + postArr[step].player + ` `.repeat(playerSpace-postArr[step].player.length);
 			updateMessage += postArr[step].game + ` `.repeat(gameSpace-postArr[step].game.length);
 			updateMessage += postArr[step].turn + ` `.repeat(turnSpace-postArr[step].turn.length);
-			/* let tempTime = getTime(postArr[step].time);
-			console.log(`Post time:`, postArr[step].time);
-			console.log(`Converted time:`, tempTime);
-			console.log(`Fresh time:`, getTime(postArr[step].time));
-			updateMessage += `>` + tempTime + `<`; // ` `.repeat(timeSpace-tempTime.length);	*/
+			let tempTime = getTime(postArr[step].timestamp);
+			updateMessage += tempTime + ` `.repeat(timeSpace-tempTime.length);
 		}
 
 		// Add a marker to show which game was last updated
@@ -462,28 +461,43 @@ function getTime(timestamp) {
 	var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 	var dateString; // The return value
-	// Grab the time code, turn it into a date
-	var date = new Date(timestamp);
 
-	// Break it into components
-	const d = {
-		year: date.getFullYear(),
-		month: months[date.getMonth()],
-		day: date.getDate(),
-		hours: date.getHours(),
-		minutes: date.getMinutes(),
-		seconds: date.getSeconds()
-	};
+	// If we process a game from Summary that's not in the last update pull, the timestamp will be 1
+	if (timestamp==1) {
+		return ("It's been a while...");
+	}
+	else {
 
-	// Build the date string
-	dateString=``;
-	if (d.day<10) {dateString=`0`;}
-	dateString+=d.day + `-` + d.month + `-` + d.year + `, `;
-	dateString+=d.hours + `:`;
-	if (d.minutes<10) {dateString+=`0`;}
-	dateString+=d.minutes + `:`;
-	if (d.seconds<10) {dateString+=`0`;}
-	dateString+=d.seconds;
+		// Grab the time code, turn it into a date
+		var date = new Date(timestamp);
 
-	return dateString;
+		// Break it into components
+		const d = {
+			year: date.getFullYear(),
+			month: months[date.getMonth()],
+			day: date.getDate(),
+			hours: date.getHours(),
+			minutes: date.getMinutes(),
+			seconds: date.getSeconds()
+		};
+
+		// Build the date string
+		dateString=``;
+		if (d.day<10) {dateString=`0`;}
+		dateString+=d.day + `-` + d.month + `-` + d.year + `, `;
+		dateString+=d.hours;
+		if (d.minutes<10) {dateString+=`0`;}
+		dateString+=d.minutes + 'h';
+		// Don't really need seconds in the last updated timestamp...
+		// dateString+=d.minutes + `:`;
+		// if (d.seconds<10) {dateString+=`0`;}
+		// dateString+=d.seconds;
+
+		/* console.log('### Timestamp:',timestamp,':###');
+		console.log('### date:', date, ':###');
+		console.log('### d (dmy):', d.day, d.month, d.year, ':###');
+		console.log('### dateString:', dateString, '###'); */
+
+		return dateString;
+	}
 }

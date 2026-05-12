@@ -2,6 +2,7 @@
 // Game, Turn, Player, Timestamp
 
 const { SlashCommandBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 require('dotenv').config();
 
 const gameSpace = 25;   // Padding after the game name
@@ -61,7 +62,7 @@ module.exports = {
 
 		await interaction.reply({
 			content: updateMessage,
-			ephemeral: true
+			flags: MessageFlags.Ephemeral
 		});
 	},
 }

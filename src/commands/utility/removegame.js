@@ -1,6 +1,7 @@
 // This command will delete one game from the stored current list -- used for when a game ends
 
 const { SlashCommandBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 require('dotenv').config();
 
 module.exports = {
@@ -52,7 +53,7 @@ module.exports = {
 		// Post the reply
 		await interaction.reply({
 			content: replyMsg,
-			ephemeral: true
+			flags: MessageFlags.Ephemeral
 		});
 
 
