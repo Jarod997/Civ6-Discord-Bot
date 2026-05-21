@@ -485,6 +485,7 @@ function getTime(timestamp) {
 		dateString=``;
 		if (d.day<10) {dateString=`0`;}
 		dateString+=d.day + `-` + d.month + `-` + d.year + `, `;
+		if (d.hours<10) {dateString+=`0`}
 		dateString+=d.hours;
 		if (d.minutes<10) {dateString+=`0`;}
 		dateString+=d.minutes + 'h';
