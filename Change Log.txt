@@ -1,3 +1,9 @@
+08-OCT-2026
+- The initial update now goes back 500 updates message to get more history -- incase we have some *slow* players
+
+08-SEP-2026
+- Took out a bunch of text from the console log, on "0" it should only indicate high level program progression
+
 21-MAY-2026
 - Minor update to fix missing leading zero in the time portion of the timestamp
 

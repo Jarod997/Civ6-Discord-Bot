@@ -21,7 +21,7 @@ const timeSpace = 21;   // Padding after TURN SINCE title for timestamp
 
 // *** Globals ***
 // Variable to disable certain items when frequent restarts are going to happen
-global.inDevelopment = 1; // 0: off, 1: add debugging lines, 2: add data dumps
+global.inDevelopment = 0; // 0: off, 1: add debugging lines, 2: add data dumps
 // Create array for game & turn info
 global.myGames = [];
 // Create array to hold a jobs list - used to prevent crashes from (near) concurrent update posts
@@ -225,7 +225,33 @@ async function runBotStartup() {
 	console.log(`- Fetch summary bot messages.`);
 	const summaryMessages = await OutputChannel.messages.fetch({ limit: 10});
 	console.log(`- Fetch update bot messages.`);
-	const updateMessages = await InputChannel.messages.fetch({ limit: 100});
+	// const updateMessages = await InputChannel.messages.fetch({ limit: 100});
+
+	// New section to pull more than 100 messages
+	const limit=500; // Arbitrary number - twice as much as we're currently doing
+	let updateMessages = new Collection();
+    let lastMessageId = null;
+
+    while (updateMessages.size < limit) {
+        // Determine how many messages are left to fetch in this specific batch
+        const remaining = limit - updateMessages.size;
+        const batchLimit = remaining > 100 ? 100 : remaining;
+        const options = { limit: batchLimit };
+        if (lastMessageId) {
+            options.before = lastMessageId;
+        }
+        // Fetch the batch from Discord
+        const messagesBatch = await InputChannel.messages.fetch(options);
+        // If no messages are returned, we have reached the beginning of the channel history
+        if (messagesBatch.size === 0) break;
+        // Combine the newly fetched batch with our existing collection
+        updateMessages = updateMessages.concat(messagesBatch);
+        // Grab the ID of the oldest message in this batch to look "before" it next loop
+        lastMessageId = messagesBatch.last()?.id;
+        // If the API returned fewer messages than the maximum requested, the channel is empty
+        if (messagesBatch.size < batchLimit) break;
+    }
+	// End new section
 
 	var lastPost = "";
 	var botPostID = "";
@@ -237,16 +263,16 @@ async function runBotStartup() {
 		if (message.content.includes(`PBC Game Summary`)) {
 			lastPost=message.content.trim().replaceAll("*", "");
 			botPostID=message.id;
-			console.log(`-- Found post:`, botPostID);
+			if (inDevelopment >= 1) { console.log(`-- Found post:`, botPostID); }
 		}
 	});
-	if (botPostID=="") { console.log(`-- No previous post found!`); }
+	if (botPostID=="" && inDevelopment >= 1) { console.log(`-- No previous post found!`); }
 
 	// If a previous post exists, read it into memory
 
 	var tempPlayer="";
 	if (botPostID!="") {
-		console.log(`- Loading previous post.`);
+		if (inDevelopment >= 1) { console.log(`- Loading previous post.`); }
 		const postArr = lastPost.split("\n");
 		let thisGame=new Games;
 		for (let loopVar=0; loopVar<postArr.length; loopVar++) {
@@ -331,10 +357,12 @@ async function runBotStartup() {
 
 	sortGames();
 
-	console.log('- Current data:');
-	if (inDevelopment >= 1) {console.log(`myGames.length:`, myGames.length);}
-	for (let step = 0; step < myGames.length; step++) {
-		console.log(myGames[step]);
+	if (inDevelopment >= 1) {
+		console.log('- Current data:');
+	    console.log(`myGames.length:`, myGames.length);
+		for (let step = 0; step < myGames.length; step++) {
+			console.log(myGames[step]);
+		}
 	}
 
 	postSummary("Server Rebooted");
@@ -376,10 +404,10 @@ async function postSummary(lastUpdatedGame) {
 		if (message.content.includes(`PBC Game Summary`)) {
 			lastPost=message.content.trim().replaceAll("*", "");
 			botPostID=message.id;
-			console.log(`-- Found post:`, botPostID);
+			if (inDevelopment >= 1) { console.log(`-- Found post:`, botPostID); }
 		}
 	});
-	if (botPostID=="") { console.log(`-- No previous post found!`); }
+	if (botPostID=="" && inDevelopment >= 1) { console.log(`-- No previous post found!`); }
 
 	// Display the games summary
 	console.log(`- Building summary post...`);
@@ -436,7 +464,7 @@ async function postSummary(lastUpdatedGame) {
 	if (jobQueue.length <= 1) {
 		// If the bot HAS posted, then delete the previous post.
 		if (botPostID != "") { 
-			console.log(`- Deleting previous post.`);
+			if (inDevelopment >= 1) { console.log(`- Deleting previous post.`); }
 			client.channels.cache.get(process.env.SummaryChannelID).messages.fetch(botPostID).then(message => message.delete());
 		}
 		// Post the update.
